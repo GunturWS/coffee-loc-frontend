@@ -7,6 +7,8 @@ export const fetchCoffeeShops = createAsyncThunk(
   async (params, { rejectWithValue }) => {
     try {
       const response = await api.get("/coffee-shops", { params });
+      console.log(response.data);
+      
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
