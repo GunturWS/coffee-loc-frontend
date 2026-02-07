@@ -38,39 +38,32 @@ const DetailPage = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [showAllAmenities, setShowAllAmenities] = useState(false);
 
-  const coffeeShopsData = data.coffeeShops;
+  // Debug: Cek struktur data
+  useEffect(() => {
+    console.log("Data structure:", data);
+    console.log("Coffee shops array:", data.coffeeShops);
+    console.log("Looking for ID:", id);
 
- useEffect(() => {
-   console.log("coffeeShopsData structure:", {
-     hascoffeeShopsData: !!coffeeShopsData,
-     hasCoffeeShops: coffeeShopsData?.coffeeShops,
-     coffeeShopsLength: coffeeShopsData?.coffeeShops?.length,
-     coffeeShopsType: typeof coffeeShopsData?.coffeeShops,
-     idParam: id,
-     parsedId: parseInt(id),
-   });
+    // Cari shop berdasarkan ID
+    const shop = data.coffeeShops.find((shop) => shop.id === parseInt(id));
+    console.log("Found shop:", shop);
 
-   if (coffeeShopsData?.coffeeShops) {
-     console.log("All shops:", coffeeShopsData.coffeeShops);
-     const shop = coffeeShopsData.coffeeShops.find((shop) => shop.id === parseInt(id));
-     console.log("Found shop:", shop);
-     setCoffeeShop(shop);
-   }
- }, [id]);
+    if (shop) {
+      setCoffeeShop(shop);
 
+      // Cek favorite
+      const favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+      setIsFavorite(favorites.includes(shop.id));
+    }
+  }, [id]);
+
+  // Loading state
   if (!coffeeShop) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-coffee-50 to-white flex items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4">☕</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Coffee not found</h1>
-          <p className="text-gray-600 mb-6">This coffee shop might have moved or doesn't exist</p>
-          <button
-            onClick={() => navigate("/")}
-            className="bg-coffee-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-coffee-700 transition-colors"
-          >
-            Back to Home
-          </button>
+          <div className="w-16 h-16 border-4 border-coffee-300 border-t-coffee-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading coffee shop...</p>
         </div>
       </div>
     );
@@ -144,9 +137,9 @@ const DetailPage = () => {
     mall: "Mall Location",
   };
 
-  const displayedAmenities = showAllAmenities
-    ? coffeeShop.amenities
-    : coffeeShop.amenities.slice(0, 6);
+  // Handle jika amenities tidak ada
+  const amenities = coffeeShop.amenities || [];
+  const displayedAmenities = showAllAmenities ? amenities : amenities.slice(0, 6);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-coffee-50 via-white to-coffee-25">
@@ -186,7 +179,7 @@ const DetailPage = () => {
         {/* Image Gallery */}
         <div className="relative h-[400px] md:h-[500px] rounded-3xl overflow-hidden mb-8 group">
           <img
-            src={coffeeShop.images[currentImageIndex]}
+            src={coffeeShop.images?.[currentImageIndex] || coffeeShop.image}
             alt={coffeeShop.name}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
@@ -195,7 +188,7 @@ const DetailPage = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
 
           {/* Image Navigation */}
-          {coffeeShop.images.length > 1 && (
+          {coffeeShop.images && coffeeShop.images.length > 1 && (
             <>
               <button
                 onClick={() =>
@@ -310,7 +303,7 @@ const DetailPage = () => {
                 Coffee Specialties
               </h2>
               <div className="flex flex-wrap gap-3">
-                {coffeeShop.coffeeTypes.map((type, index) => (
+                {(coffeeShop.coffeeTypes || []).map((type, index) => (
                   <span
                     key={index}
                     className="px-4 py-2.5 bg-gradient-to-r from-coffee-50 to-coffee-100 text-coffee-800 rounded-xl font-medium border border-coffee-200 hover:border-coffee-300 transition-colors"
@@ -325,7 +318,7 @@ const DetailPage = () => {
             <div className="mb-10">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold text-gray-900">What's here</h2>
-                {coffeeShop.amenities.length > 6 && (
+                {amenities.length > 6 && (
                   <button
                     onClick={() => setShowAllAmenities(!showAllAmenities)}
                     className="text-coffee-600 hover:text-coffee-700 font-medium flex items-center gap-1"
@@ -423,15 +416,16 @@ const DetailPage = () => {
                     Opening Hours
                   </h3>
                   <div className="space-y-2">
-                    {Object.entries(coffeeShop.openingHours).map(([day, hours]) => (
-                      <div
-                        key={day}
-                        className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0"
-                      >
-                        <span className="text-gray-600 capitalize">{day}</span>
-                        <span className="font-medium text-gray-900">{hours}</span>
-                      </div>
-                    ))}
+                    {coffeeShop.openingHours &&
+                      Object.entries(coffeeShop.openingHours).map(([day, hours]) => (
+                        <div
+                          key={day}
+                          className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0"
+                        >
+                          <span className="text-gray-600 capitalize">{day}</span>
+                          <span className="font-medium text-gray-900">{hours}</span>
+                        </div>
+                      ))}
                   </div>
                 </div>
 
@@ -446,12 +440,14 @@ const DetailPage = () => {
                     <span className="group-hover:translate-x-1 transition-transform">→</span>
                   </button>
 
-                  <button
-                    onClick={() => window.open(`tel:${coffeeShop.phone}`, "_self")}
-                    className="w-full bg-white border-2 border-coffee-600 text-coffee-600 py-3.5 rounded-xl font-bold text-lg hover:bg-coffee-50 transition-colors"
-                  >
-                    Call Now
-                  </button>
+                  {coffeeShop.phone && (
+                    <button
+                      onClick={() => window.open(`tel:${coffeeShop.phone}`, "_self")}
+                      className="w-full bg-white border-2 border-coffee-600 text-coffee-600 py-3.5 rounded-xl font-bold text-lg hover:bg-coffee-50 transition-colors"
+                    >
+                      Call Now
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -504,7 +500,7 @@ const DetailPage = () => {
         <div className="mt-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Vibes & Atmosphere</h2>
           <div className="flex flex-wrap gap-3">
-            {coffeeShop.tags.map((tag, index) => (
+            {(coffeeShop.tags || []).map((tag, index) => (
               <span
                 key={index}
                 className="px-5 py-3 bg-gradient-to-r from-coffee-50 to-amber-50 text-gray-800 rounded-xl font-medium border border-amber-200 hover:border-amber-300 transition-all hover:scale-105 shadow-sm hover:shadow-md"
