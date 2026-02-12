@@ -8,7 +8,19 @@ export const fetchCoffeeShops = createAsyncThunk(
     try {
       const response = await api.get("/coffee-shops", { params });
       console.log(response.data);
-      
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  },
+);
+
+export const fetchCoffeeShopById = createAsyncThunk(
+  "coffeeShops/fetchyById",
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/coffee-shops/${id}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -85,11 +97,24 @@ const coffeeShopsSlice = createSlice({
           totalPages: action.payload.meta?.totalPages || 1,
         };
       })
-      .addCase(fetchCoffeeShops.rejected, (state, action) => {
+      .addCase(fetchCoffeeShopById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCoffeeShopById.fulfilled, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
-        state.success = false;
+        state.currentShop = action.payload.data || action.payload;
+        // Update in items array if exists
+        const index = state.items.findIndex((item) => item.id === action.payload.id);
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        }
+      })
+      .addCase(fetchCoffeeShopById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch coffee shop";
       });
+      
   },
 });
 
